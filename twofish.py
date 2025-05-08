@@ -1,3 +1,83 @@
+def h_func(word: str, words_l: list[str]) -> str:
+    mds = [[1, 239, 91, 91],
+           [91, 239, 239, 1],
+           [239, 91, 1, 239],
+           [239, 1, 239, 91]]
+
+    if len(words_l) == 4:
+        x0 = word[24:32]
+        x1 = word[16:24]
+        x2 = word[8:16]
+        x3 = word[:8]
+
+        x0 = q1(x0)
+        x1 = q0(x1)
+        x2 = q0(x2)
+        x3 = q1(x3)
+
+        word = x3 + x2 + x1 + x0
+        word = int(word, 2) ^ int(words_l[3], 2)
+        word = bin(word)[2:].zfill(32)
+
+    if len(words_l) >= 3:
+        x0 = word[24:32]
+        x1 = word[16:24]
+        x2 = word[8:16]
+        x3 = word[:8]
+
+        x0 = q1(x0)
+        x1 = q1(x1)
+        x2 = q0(x2)
+        x3 = q0(x3)
+
+        word = x3 + x2 + x1 + x0
+        word = int(word, 2) ^ int(words_l[2], 2)
+        word = bin(word)[2:].zfill(32)
+
+    x0 = word[24:32]
+    x1 = word[16:24]
+    x2 = word[8:16]
+    x3 = word[:8]
+
+    x0 = q0(x0)
+    x1 = q1(x1)
+    x2 = q0(x2)
+    x3 = q1(x3)
+
+    word = x3 + x2 + x1 + x0
+    word = int(word, 2) ^ int(words_l[1], 2)
+    word = bin(word)[2:].zfill(32)
+
+    x0 = word[24:32]
+    x1 = word[16:24]
+    x2 = word[8:16]
+    x3 = word[:8]
+
+    x0 = q0(x0)
+    x1 = q0(x1)
+    x2 = q1(x2)
+    x3 = q1(x3)
+
+    word = x3 + x2 + x1 + x0
+    word = int(word, 2) ^ int(words_l[0], 2)
+    word = bin(word)[2:].zfill(32)
+
+    x0 = word[24:32]
+    x1 = word[16:24]
+    x2 = word[8:16]
+    x3 = word[:8]
+
+    x0 = q1(x0)
+    x1 = q0(x1)
+    x2 = q1(x2)
+    x3 = q0(x3)
+
+    word_v = [[int(x0, 2)], [int(x1, 2)], [int(x2, 2)], [int(x3, 2)]]
+    c = matrix_multiplication(mds, word_v, 0x169)
+    res = bin(c[3][0])[2:].zfill(8) + bin(c[2][0])[2:].zfill(8) + bin(c[1][0])[2:].zfill(8) + bin(c[0][0])[2:].zfill(8)
+    print(res)
+    return res
+
 def q0(num: str) -> str:
     num = int(num, 2)
     t0 = [8, 1, 7, 13, 6, 15, 3, 2, 0, 11, 5, 9, 14, 12, 10, 4]
@@ -21,7 +101,7 @@ def q0(num: str) -> str:
     b4 = t3[b3]
 
     result = 16 * b4 + a4
-    return bin(result)[2:].zfill(32)
+    return bin(result)[2:].zfill(8)
 
 def q1(num: str) -> str:
     num = int(num, 2)
@@ -46,7 +126,7 @@ def q1(num: str) -> str:
     b4 = t3[b3]
 
     result = 16 * b4 + a4
-    return bin(result)[2:].zfill(32)
+    return bin(result)[2:].zfill(8)
 
 def rotate_right(num: str, x: int, width: int) -> str:
     rotated = num[-(x % width):] + num[:-(x % width)]
@@ -174,3 +254,7 @@ def bin_to_str(binary: str) -> str:
 if __name__ == '__main__':
     stext = 'tekst do zaszyfrowania'
     skey = 'secret_key2183791237'
+
+    print(key_schedule(skey))
+    x = h_func('01110010011000110110010101110011', ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001', '01101011010111110111010001100101'])
+    print(x == '00001000001000101010110001010101')
