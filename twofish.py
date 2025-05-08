@@ -263,16 +263,72 @@ def str_to_bin(text: str) -> str:
 def bin_to_str(binary: str) -> str:
     return ''.join([chr(int(binary[i:i + 8], 2)) for i in range(0, len(binary), 8)])
 
+def g_func(word: str, s: list[str]) -> str:
+    return h_func(word, s)
+
+def f_func(word1: str, word2: str, round: int, k: list[str], s: list[str]) -> tuple[str, str]:
+    t0 = g_func(word1, s)
+    t1 = g_func(rotate_left(word2, 8, 32), s)
+
+    f0 = (int(t0, 2) + int(t1, 2) + int(k[2 * round + 8], 2)) % pow(2, 32)
+    f1 = (int(t0, 2) + 2 * int(t1, 2) + int(k[2 * round + 9], 2)) % pow(2, 32)
+
+    f0 = bin(f0)[2:].zfill(32)
+    f1 = bin(f1)[2:].zfill(32)
+    return f0, f1
+
+def input_whitening_cypher(text: str, k: list[str]) -> tuple[str, str, str, str]:
+    r0 = text[0:32]
+    r1 = text[32:64]
+    r2 = text[64:96]
+    r3 = text[96:128]
+
+    r0 = bin(int(r0, 2) ^ int(k[0], 2))[2:].zfill(32)
+    r1 = bin(int(r1, 2) ^ int(k[1], 2))[2:].zfill(32)
+    r2 = bin(int(r2, 2) ^ int(k[2], 2))[2:].zfill(32)
+    r3 = bin(int(r3, 2) ^ int(k[3], 2))[2:].zfill(32)
+
+    return r0, r1, r2, r3
+
+def output_whitening_cypher(r0: str, r1: str, r2: str, r3: str,  k: list[str]) -> tuple[str, str, str, str]:
+    r0 = bin(int(r0, 2) ^ int(k[4], 2))[2:].zfill(32)
+    r1 = bin(int(r1, 2) ^ int(k[5], 2))[2:].zfill(32)
+    r2 = bin(int(r2, 2) ^ int(k[6], 2))[2:].zfill(32)
+    r3 = bin(int(r3, 2) ^ int(k[7], 2))[2:].zfill(32)
+
+    return r0, r1, r2, r3
+
+def encrypt(text: str, key: str) -> str:
+    me, mo, s = key_schedule(key)
+    blocks, padding = divide_input_into_blocks(text)
+    k = generate_round_keys(me, mo)
+    res_blocks = []
+
+    temp = '0' * 128
+    for block in blocks:
+        r0, r1, r2, r3 = input_whitening_cypher(block, k)
+
+        f0, f1 = f_func(r0, r1, 0, k, s)
+        c2 = rotate_right(bin(int(f0, 2) ^ int(r2, 2))[2:].zfill(32), 1, 32)
+        c3 = bin(int(rotate_left(r3, 1, 32), 2) ^ int(f1, 2))[2:].zfill(32)
+
+        for i in range(15):
+            r2, r3, r0, r1 = r0, r1, c2, c3
+            f0, f1 = f_func(r0, r1, i + 1, k, s)
+            c2 = rotate_right(bin(int(f0, 2) ^ int(r2, 2))[2:].zfill(32), 1, 32)
+            c3 = bin(int(rotate_left(r3, 1, 32), 2) ^ int(f1, 2))[2:].zfill(32)
+
+
+        r0, r1, r2, r3 = output_whitening_cypher(r0, r1, r2, r3, k)
+        temp = r0 + r1 + r2 + r3
+        res_blocks.append(temp)
+
+    res = ''.join(res_blocks)
+    return res
 
 if __name__ == '__main__':
-    stext = 'tekst do zaszyfrowania'
-    skey = 'secret_key2183791237'
+    msg = "a"
+    k = "a"
 
-    # print(key_schedule(skey))
-    # x = h_func('01110010011000110110010101110011', ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001', '01101011010111110111010001100101'])
-    # print(x == '00001000001000101010110001010101')
-
-
-    me = ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001']
-    mo = ['01101011010111110111010001100101', '00111001001101110011001100111000', '00000000000000000000000000000000']
-    print(generate_round_keys(me, mo))
+    encrypted = encrypt(msg, k)
+    print(hex(int(encrypted, 0))[2:].zfill(32))
