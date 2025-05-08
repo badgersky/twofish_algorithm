@@ -263,20 +263,6 @@ def str_to_bin(text: str) -> str:
 def bin_to_str(binary: str) -> str:
     return ''.join([chr(int(binary[i:i + 8], 2)) for i in range(0, len(binary), 8)])
 
-def g_func(word: str, s: list[str]) -> str:
-    return h_func(word, s)
-
-def f_func(word1: str, word2: str, round: int, k: list[str], s: list[str]) -> tuple[str, str]:
-    t0 = g_func(word1, s)
-    t1 = g_func(rotate_left(word2, 8, 32), s)
-
-    f0 = (int(t0, 2) + int(t1, 2) + int(k[2 * round + 8], 2)) % pow(2, 32)
-    f1 = (int(t0, 2) + 2 * int(t1, 2) + int(k[2 * round + 9], 2)) % pow(2, 32)
-
-    f0 = bin(f0)[2:].zfill(32)
-    f1 = bin(f1)[2:].zfill(32)
-    return f0, f1
-
 def input_whitening_cypher(text: str, k: list[str]) -> tuple[str, str, str, str]:
     r0 = text[0:32]
     r1 = text[32:64]
@@ -298,37 +284,83 @@ def output_whitening_cypher(r0: str, r1: str, r2: str, r3: str,  k: list[str]) -
 
     return r0, r1, r2, r3
 
-def encrypt(text: str, key: str) -> str:
+def encrypt(text: str, key: str) -> tuple[str, int]:
     me, mo, s = key_schedule(key)
     blocks, padding = divide_input_into_blocks(text)
     k = generate_round_keys(me, mo)
     res_blocks = []
 
-    temp = '0' * 128
     for block in blocks:
         r0, r1, r2, r3 = input_whitening_cypher(block, k)
 
-        f0, f1 = f_func(r0, r1, 0, k, s)
-        c2 = rotate_right(bin(int(f0, 2) ^ int(r2, 2))[2:].zfill(32), 1, 32)
-        c3 = bin(int(rotate_left(r3, 1, 32), 2) ^ int(f1, 2))[2:].zfill(32)
+        for i in range(16):
+            t0 = h_func(r0, s)
+            t1 = h_func(r1, s)
+            t1 = rotate_left(t1, 8, 32)
 
-        for i in range(15):
-            r2, r3, r0, r1 = r0, r1, c2, c3
-            f0, f1 = f_func(r0, r1, i + 1, k, s)
-            c2 = rotate_right(bin(int(f0, 2) ^ int(r2, 2))[2:].zfill(32), 1, 32)
-            c3 = bin(int(rotate_left(r3, 1, 32), 2) ^ int(f1, 2))[2:].zfill(32)
+            f0 = bin(int(t0, 2) ^ int(k[2 * i + 8], 2))[2:].zfill(32)
+            f1 = bin(int(t1, 2) ^ int(k[2 * i + 9], 2))[2:].zfill(32)
 
+            f0 = rotate_left(f0, 1, 32)
+            f1 = rotate_right(f1, 1, 32)
+
+            f0 = int(f0, 2) % pow(2, 32)
+            f1 = int(f1, 2) % pow(2, 32)
+
+            r2 = bin(int(r2, 2) ^ f0)[2:].zfill(32)
+            r3 = bin(int(r3, 2) ^ f1)[2:].zfill(32)
+
+            r0, r1, r2, r3 = r2, r3, r0, r1
 
         r0, r1, r2, r3 = output_whitening_cypher(r0, r1, r2, r3, k)
-        temp = r0 + r1 + r2 + r3
-        res_blocks.append(temp)
+        res_blocks.append(r0 + r1 + r2 + r3)
 
     res = ''.join(res_blocks)
-    return res
+    return res, padding
+
+def divide_ciphertext(text: str) -> list[str]:
+    blocks = []
+    for i in range(0, len(text), 128):
+        blocks.append(text[i:i + 128])
+    return blocks
+
+def decrypt(ciphertext: str, key: str, padding: int) -> str:
+    me, mo, s = key_schedule(key)
+    blocks = divide_ciphertext(ciphertext)
+    k = generate_round_keys(me, mo)
+    res_blocks = []
+
+    for block in blocks:
+        r0, r1, r2, r3 = output_whitening_cypher(block[0:32], block[32:64], block[64:96], block[96:128], k)
+
+        for i in reversed(range(16)):
+            r0, r1, r2, r3 = r2, r3, r0, r1
+
+            t0 = h_func(r0, s)
+            t1 = h_func(r1, s)
+            t1 = rotate_left(t1, 8, 32)
+
+            f0 = bin(int(t0, 2) ^ int(k[2 * i + 8], 2))[2:].zfill(32)
+            f1 = bin(int(t1, 2) ^ int(k[2 * i + 9], 2))[2:].zfill(32)
+
+            f0 = rotate_left(f0, 1, 32)
+            f1 = rotate_right(f1, 1, 32)
+
+            f0 = int(f0, 2) % pow(2, 32)
+            f1 = int(f1, 2) % pow(2, 32)
+
+            r2 = bin(int(r2, 2) ^ f0)[2:].zfill(32)
+            r3 = bin(int(r3, 2) ^ f1)[2:].zfill(32)
+
+        r0, r1, r2, r3 = input_whitening_cypher(r0 + r1 + r2 + r3, k)
+        res_blocks.append(r0 + r1 + r2 + r3)
+
+    res = ''.join(res_blocks)
+    return res[:len(res) - padding]
 
 if __name__ == '__main__':
-    msg = "a"
-    k = "a"
+    msg = "wysylam message ze trzeba robic rzeczy"
+    k = "19269417412749812"
 
-    encrypted = encrypt(msg, k)
-    print(hex(int(encrypted, 0))[2:].zfill(32))
+    encrypted, padding = encrypt(msg, k)
+    decrypted = decrypt(encrypted, k, padding)
