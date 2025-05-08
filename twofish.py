@@ -1,3 +1,19 @@
+def generate_round_keys(me: list[str], mo: list[str]) -> list[str]:
+    rho = pow(2, 24) + pow(2, 16) + pow(2, 8) + pow(2, 0)
+
+    k = []
+    for i in range(20):
+        a = bin(2 * i * rho)[2:].zfill(32)
+        key1 = int(h_func(a, me), 2)
+
+        b = bin(((2 * i) + 1) * rho)[2:].zfill(32)
+        key2 = int(rotate_left(h_func(b, mo), 8, 32), 2)
+
+        k.append(bin((key1 + key2) % pow(2, 32))[2:].zfill(32))
+        k.append(rotate_left(bin((key1 + (2 * key2)) % pow(2, 32))[2:].zfill(32), 9, 32))
+
+    return k
+
 def h_func(word: str, words_l: list[str]) -> str:
     mds = [[1, 239, 91, 91],
            [91, 239, 239, 1],
@@ -75,7 +91,6 @@ def h_func(word: str, words_l: list[str]) -> str:
     word_v = [[int(x0, 2)], [int(x1, 2)], [int(x2, 2)], [int(x3, 2)]]
     c = matrix_multiplication(mds, word_v, 0x169)
     res = bin(c[3][0])[2:].zfill(8) + bin(c[2][0])[2:].zfill(8) + bin(c[1][0])[2:].zfill(8) + bin(c[0][0])[2:].zfill(8)
-    print(res)
     return res
 
 def q0(num: str) -> str:
@@ -138,7 +153,6 @@ def rotate_left(num: str, x: int, width: int) -> str:
 
 def key_schedule(key: str) -> tuple[list[str], list[str], list[str]]:
     f_key = pad_key(key)
-    print(f_key)
 
     k = len(f_key) // 64
     m = ['0'] * 8 * k
@@ -146,7 +160,6 @@ def key_schedule(key: str) -> tuple[list[str], list[str], list[str]]:
 
     for i in range(len(m)):
         m[i] = f_key[i * 8:(i + 1) * 8]
-    print(m)
 
     for i in range(len(key_words)):
         tmp = 0
@@ -255,6 +268,11 @@ if __name__ == '__main__':
     stext = 'tekst do zaszyfrowania'
     skey = 'secret_key2183791237'
 
-    print(key_schedule(skey))
-    x = h_func('01110010011000110110010101110011', ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001', '01101011010111110111010001100101'])
-    print(x == '00001000001000101010110001010101')
+    # print(key_schedule(skey))
+    # x = h_func('01110010011000110110010101110011', ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001', '01101011010111110111010001100101'])
+    # print(x == '00001000001000101010110001010101')
+
+
+    me = ['01110010011000110110010101110011', '00110001001100100111100101100101', '00110111001100110011001000110001']
+    mo = ['01101011010111110111010001100101', '00111001001101110011001100111000', '00000000000000000000000000000000']
+    print(generate_round_keys(me, mo))
