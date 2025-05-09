@@ -343,7 +343,6 @@ def decrypt(ciphertext: str, key: str, padding: int) -> str:
             f0 = int(f0, 2) % pow(2, 32)
             f1 = int(f1, 2) % pow(2, 32)
 
-
             r3 = bin(int(r3, 2) ^ f1)[2:].zfill(32)
             r3 = rotate_right(r3, 1, 32)
 
@@ -357,11 +356,17 @@ def decrypt(ciphertext: str, key: str, padding: int) -> str:
     return res[:len(res) - padding]
 
 if __name__ == '__main__':
-    msg = "POLSKA GUROM"
-    k = "192694hsouida"
+    plaintext = input('Enter text to cypher: ')
+    secret_key = input('Enter encryption key: ')
+    # input('Press enter to encrypt')
 
-
-    encrypted, padding = encrypt(msg, k)
-    print(hex(int(encrypted, 2)))
-    decrypted = decrypt(encrypted, k, padding)
-    print(bin_to_str(decrypted))
+    try:
+        encrypted, padding = encrypt(plaintext, secret_key)
+    except ValueError as e:
+        print(e.args[0])
+    else:
+        print(f'Encrypted text in binary system: {encrypted}')
+        print(f'Encrypted text in hexadecimal system system: {hex(int(encrypted, 2))}')
+        # input('Press enter to decrypt')
+        decrypted = decrypt(encrypted, secret_key, padding)
+        print(f'Decrypted text: {bin_to_str(decrypted)}')
