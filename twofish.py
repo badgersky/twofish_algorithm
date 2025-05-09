@@ -366,7 +366,7 @@ if __name__ == '__main__':
         print(e.args[0])
     else:
         print(f'Encrypted text in binary system: {encrypted}')
-        print(f'Encrypted text in hexadecimal system system: {hex(int(encrypted, 2))}')
+        print(f'Encrypted text in hexadecimal system: {hex(int(encrypted, 2))}')
         # input('Press enter to decrypt')
         decrypted = decrypt(encrypted, secret_key, padding)
         print(f'Decrypted text: {bin_to_str(decrypted)}')
