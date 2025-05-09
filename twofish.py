@@ -295,19 +295,17 @@ def encrypt(text: str, key: str) -> tuple[str, int]:
 
         for i in range(16):
             t0 = h_func(r0, s)
-            t1 = h_func(r1, s)
-            t1 = rotate_left(t1, 8, 32)
+            t1 = h_func(rotate_left(r1, 8, 32), s)
 
-            f0 = bin(int(t0, 2) ^ int(k[2 * i + 8], 2))[2:].zfill(32)
-            f1 = bin(int(t1, 2) ^ int(k[2 * i + 9], 2))[2:].zfill(32)
-
-            f0 = rotate_left(f0, 1, 32)
-            f1 = rotate_right(f1, 1, 32)
+            f0 = bin(int(t1, 2) + int(t0, 2) + int(k[2 * i + 8], 2))[2:].zfill(32)
+            f1 = bin(int(t0, 2) + 2 * int(t1, 2) + int(k[2 * i + 9], 2))[2:].zfill(32)
 
             f0 = int(f0, 2) % pow(2, 32)
             f1 = int(f1, 2) % pow(2, 32)
 
             r2 = bin(int(r2, 2) ^ f0)[2:].zfill(32)
+            r2 = rotate_right(r2, 1, 32)
+            r3 = rotate_left(r3, 1, 32)
             r3 = bin(int(r3, 2) ^ f1)[2:].zfill(32)
 
             r0, r1, r2, r3 = r2, r3, r0, r1
@@ -337,20 +335,20 @@ def decrypt(ciphertext: str, key: str, padding: int) -> str:
             r0, r1, r2, r3 = r2, r3, r0, r1
 
             t0 = h_func(r0, s)
-            t1 = h_func(r1, s)
-            t1 = rotate_left(t1, 8, 32)
+            t1 = h_func(rotate_left(r1, 8, 32), s)
 
-            f0 = bin(int(t0, 2) ^ int(k[2 * i + 8], 2))[2:].zfill(32)
-            f1 = bin(int(t1, 2) ^ int(k[2 * i + 9], 2))[2:].zfill(32)
-
-            f0 = rotate_left(f0, 1, 32)
-            f1 = rotate_right(f1, 1, 32)
+            f0 = bin(int(t1, 2) + int(t0, 2) + int(k[2 * i + 8], 2))[2:].zfill(32)
+            f1 = bin(int(t0, 2) + 2 * int(t1, 2) + int(k[2 * i + 9], 2))[2:].zfill(32)
 
             f0 = int(f0, 2) % pow(2, 32)
             f1 = int(f1, 2) % pow(2, 32)
 
-            r2 = bin(int(r2, 2) ^ f0)[2:].zfill(32)
+
             r3 = bin(int(r3, 2) ^ f1)[2:].zfill(32)
+            r3 = rotate_right(r3, 1, 32)
+
+            r2 = rotate_left(r2, 1, 32)
+            r2 = bin(int(r2, 2) ^ f0)[2:].zfill(32)
 
         r0, r1, r2, r3 = input_whitening_cypher(r0 + r1 + r2 + r3, k)
         res_blocks.append(r0 + r1 + r2 + r3)
@@ -359,8 +357,11 @@ def decrypt(ciphertext: str, key: str, padding: int) -> str:
     return res[:len(res) - padding]
 
 if __name__ == '__main__':
-    msg = "wysylam message ze trzeba robic rzeczy"
-    k = "19269417412749812"
+    msg = "POLSKA GUROM"
+    k = "192694hsouida"
+
 
     encrypted, padding = encrypt(msg, k)
+    print(hex(int(encrypted, 2)))
     decrypted = decrypt(encrypted, k, padding)
+    print(bin_to_str(decrypted))
